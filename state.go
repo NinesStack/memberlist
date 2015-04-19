@@ -474,7 +474,7 @@ func (m *Memberlist) gossip() {
 
 	// We try back-to-back to get a few broadcasts
 
-	for i := 0; i < len(kNodes); i++ {
+	for i := 0; i < 10; i++ {
 		// Get any pending broadcasts
 		msgs := m.getBroadcasts(compoundOverhead, bytesAvail)
 		if len(msgs) == 0 {
