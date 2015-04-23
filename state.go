@@ -395,7 +395,8 @@ func (m *Memberlist) probeNode(node *nodeState) {
 
 	// No acks received from target, suspect it as failed.
 	m.logger.Printf("[INFO] memberlist: Suspect %s has failed, no acks received", node.Name)
-	s := suspect{Incarnation: node.Incarnation, Node: node.Name, From: m.config.Name}
+	s := suspect{Incarnation: node.Incarnation, Node: node.Name, From: m.config.Name,
+		ClusterName: m.config.ClusterName}
 	m.suspectNode(&s)
 }
 
@@ -1111,6 +1112,7 @@ func (m *Memberlist) mergeState(remote []pushNodeState) {
 			a := alive{
 				Incarnation: r.Incarnation,
 				Node:        r.Name,
+				ClusterName: m.config.ClusterName,
 				Addr:        r.Addr,
 				Port:        r.Port,
 				Meta:        r.Meta,
@@ -1123,7 +1125,8 @@ func (m *Memberlist) mergeState(remote []pushNodeState) {
 			// suspect that node instead of declaring it dead instantly
 			fallthrough
 		case stateSuspect:
-			s := suspect{Incarnation: r.Incarnation, Node: r.Name, From: m.config.Name}
+			s := suspect{Incarnation: r.Incarnation, Node: r.Name, From: m.config.Name,
+				ClusterName: m.config.ClusterName}
 			m.suspectNode(&s)
 		}
 	}

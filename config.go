@@ -11,6 +11,9 @@ type Config struct {
 	// The name of this node. This must be unique in the cluster.
 	Name string
 
+	// Name of the cluster
+	ClusterName string
+
 	// Configuration related to what address to bind to and ports to
 	// listen on. The port is used for both UDP and TCP gossip.
 	// It is assumed other nodes are running on this port, but they
@@ -195,6 +198,20 @@ type Config struct {
 func DefaultLANConfig() *Config {
 	hostname, _ := os.Hostname()
 	return &Config{
+		Name:             hostname,
+		ClusterName:      "default",
+		BindAddr:         "0.0.0.0",
+		BindPort:         7946,
+		AdvertiseAddr:    "",
+		AdvertisePort:    7946,
+		ProtocolVersion:  ProtocolVersionMax,
+		TCPTimeout:       10 * time.Second,       // Timeout after 10 seconds
+		IndirectChecks:   3,                      // Use 3 nodes for the indirect ping
+		RetransmitMult:   4,                      // Retransmit a message 4 * log(N+1) nodes
+		SuspicionMult:    5,                      // Suspect a node for 5 * log(N+1) * Interval
+		PushPullInterval: 30 * time.Second,       // Low frequency
+		ProbeTimeout:     500 * time.Millisecond, // Reasonable RTT time for LAN
+		ProbeInterval:    1 * time.Second,        // Failure check every second
 		Name:                    hostname,
 		BindAddr:                "0.0.0.0",
 		BindPort:                7946,
@@ -235,7 +252,7 @@ func DefaultWANConfig() *Config {
 	conf.PushPullInterval = 60 * time.Second
 	conf.ProbeTimeout = 3 * time.Second
 	conf.ProbeInterval = 5 * time.Second
-	conf.GossipNodes = 4 // Gossip less frequently, but to an additional node
+	conf.GossipNodes = 4    // Gossip less frequently, but to an additional node
 	conf.GossipMessages = 4 // Ask for 4 sets of messages on each pass
 	conf.GossipInterval = 500 * time.Millisecond
 	return conf

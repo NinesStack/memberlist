@@ -110,6 +110,7 @@ type nackResp struct {
 type suspect struct {
 	Incarnation uint32
 	Node        string
+	ClusterName string
 	From        string // Include who is suspecting
 }
 
@@ -118,6 +119,7 @@ type suspect struct {
 type alive struct {
 	Incarnation uint32
 	Node        string
+	ClusterName string
 	Addr        []byte
 	Port        uint16
 	Meta        []byte
@@ -132,6 +134,7 @@ type alive struct {
 type dead struct {
 	Incarnation uint32
 	Node        string
+	ClusterName string
 	From        string // Include who is suspecting
 }
 
@@ -139,6 +142,7 @@ type dead struct {
 // otherside how many states we are transferring
 type pushPullHeader struct {
 	Nodes        int
+	ClusterName  string
 	UserStateLen int  // Encodes the byte lengh of user state
 	Join         bool // Is this a join request or a anti-entropy run
 }
@@ -528,6 +532,11 @@ func (m *Memberlist) handleSuspect(buf []byte, from net.Addr) {
 		m.logger.Printf("[ERR] memberlist: Failed to decode suspect message: %s %s", err, LogAddress(from))
 		return
 	}
+
+	if !m.isSameCluster(sus.ClusterName) {
+		return
+	}
+
 	m.suspectNode(&sus)
 }
 
@@ -544,6 +553,10 @@ func (m *Memberlist) handleAlive(buf []byte, from net.Addr) {
 		live.Port = uint16(m.config.BindPort)
 	}
 
+	if !m.isSameCluster(live.ClusterName) {
+		return
+	}
+
 	m.aliveNode(&live, nil, false)
 }
 
@@ -553,6 +566,11 @@ func (m *Memberlist) handleDead(buf []byte, from net.Addr) {
 		m.logger.Printf("[ERR] memberlist: Failed to decode dead message: %s %s", err, LogAddress(from))
 		return
 	}
+
+	if !m.isSameCluster(d.ClusterName) {
+		return
+	}
+
 	m.deadNode(&d)
 }
 
@@ -781,7 +799,8 @@ func (m *Memberlist) sendLocalState(conn net.Conn, join bool) error {
 	bufConn := bytes.NewBuffer(nil)
 
 	// Send our node state
-	header := pushPullHeader{Nodes: len(localNodes), UserStateLen: len(userData), Join: join}
+	header := pushPullHeader{Nodes: len(localNodes), UserStateLen: len(userData), Join: join,
+		ClusterName: m.config.ClusterName}
 	hd := codec.MsgpackHandle{}
 	enc := codec.NewEncoder(bufConn, &hd)
 
@@ -934,6 +953,11 @@ func (m *Memberlist) readRemoteState(bufConn io.Reader, dec *codec.Decoder) (boo
 		return false, nil, nil, err
 	}
 
+	if !m.isSameCluster(header.ClusterName) {
+		return false, nil, nil, fmt.Errorf("Cluster names do not match: %s <-> %s",
+			header.ClusterName, m.config.ClusterName)
+	}
+
 	// Allocate space for the transfer
 	remoteNodes := make([]pushNodeState, header.Nodes)
 
@@ -970,118 +994,13 @@ func (m *Memberlist) readRemoteState(bufConn io.Reader, dec *codec.Decoder) (boo
 	return header.Join, remoteNodes, userBuf, nil
 }
 
-// mergeRemoteState is used to merge the remote state with our local state
-func (m *Memberlist) mergeRemoteState(join bool, remoteNodes []pushNodeState, userBuf []byte) error {
-	if err := m.verifyProtocol(remoteNodes); err != nil {
-		return err
+func (m *Memberlist) isSameCluster(name string) bool {
+	// Check if we are the same cluster
+	if name != m.config.ClusterName {
+		m.logger.Printf("[ERR] memberlist: Cluster names do not match: %s <-> %s",
+			name, m.config.ClusterName)
+		return false
 	}
 
-	// Invoke the merge delegate if any
-	if join && m.config.Merge != nil {
-		nodes := make([]*Node, len(remoteNodes))
-		for idx, n := range remoteNodes {
-			nodes[idx] = &Node{
-				Name: n.Name,
-				Addr: n.Addr,
-				Port: n.Port,
-				Meta: n.Meta,
-				PMin: n.Vsn[0],
-				PMax: n.Vsn[1],
-				PCur: n.Vsn[2],
-				DMin: n.Vsn[3],
-				DMax: n.Vsn[4],
-				DCur: n.Vsn[5],
-			}
-		}
-		if err := m.config.Merge.NotifyMerge(nodes); err != nil {
-			return err
-		}
-	}
-
-	// Merge the membership state
-	m.mergeState(remoteNodes)
-
-	// Invoke the delegate for user state
-	if userBuf != nil && m.config.Delegate != nil {
-		m.config.Delegate.MergeRemoteState(userBuf, join)
-	}
-	return nil
-}
-
-// readUserMsg is used to decode a userMsg from a TCP stream
-func (m *Memberlist) readUserMsg(bufConn io.Reader, dec *codec.Decoder) error {
-	// Read the user message header
-	var header userMsgHeader
-	if err := dec.Decode(&header); err != nil {
-		return err
-	}
-
-	// Read the user message into a buffer
-	var userBuf []byte
-	if header.UserMsgLen > 0 {
-		userBuf = make([]byte, header.UserMsgLen)
-		bytes, err := io.ReadAtLeast(bufConn, userBuf, header.UserMsgLen)
-		if err == nil && bytes != header.UserMsgLen {
-			err = fmt.Errorf(
-				"Failed to read full user message (%d / %d)",
-				bytes, header.UserMsgLen)
-		}
-		if err != nil {
-			return err
-		}
-
-		d := m.config.Delegate
-		if d != nil {
-			d.NotifyMsg(userBuf)
-		}
-	}
-
-	return nil
-}
-
-// sendPingAndWaitForAck makes a TCP connection to the given address, sends
-// a ping, and waits for an ack. All of this is done as a series of blocking
-// operations, given the deadline. The bool return parameter is true if we
-// we able to round trip a ping to the other node.
-func (m *Memberlist) sendPingAndWaitForAck(destAddr net.Addr, ping ping, deadline time.Time) (bool, error) {
-	dialer := net.Dialer{Deadline: deadline}
-	conn, err := dialer.Dial("tcp", destAddr.String())
-	if err != nil {
-		// If the node is actually dead we expect this to fail, so we
-		// shouldn't spam the logs with it. After this point, errors
-		// with the connection are real, unexpected errors and should
-		// get propagated up.
-		return false, nil
-	}
-	defer conn.Close()
-	conn.SetDeadline(deadline)
-
-	out, err := encode(pingMsg, &ping)
-	if err != nil {
-		return false, err
-	}
-
-	if err = m.rawSendMsgTCP(conn, out.Bytes()); err != nil {
-		return false, err
-	}
-
-	msgType, _, dec, err := m.readTCP(conn)
-	if err != nil {
-		return false, err
-	}
-
-	if msgType != ackRespMsg {
-		return false, fmt.Errorf("Unexpected msgType (%d) from TCP ping %s", msgType, LogConn(conn))
-	}
-
-	var ack ackResp
-	if err = dec.Decode(&ack); err != nil {
-		return false, err
-	}
-
-	if ack.SeqNo != ping.SeqNo {
-		return false, fmt.Errorf("Sequence number from ack (%d) doesn't match ping (%d) from TCP ping %s", ack.SeqNo, ping.SeqNo, LogConn(conn))
-	}
-
-	return true, nil
+	return true
 }
