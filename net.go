@@ -994,8 +994,8 @@ func (m *Memberlist) readRemoteState(bufConn io.Reader, dec *codec.Decoder) (boo
 	return header.Join, remoteNodes, userBuf, nil
 }
 
+// Compare given cluster name against config cluster name
 func (m *Memberlist) isSameCluster(name string) bool {
-	// Check if we are the same cluster
 	if name != m.config.ClusterName {
 		m.logger.Printf("[ERR] memberlist: Cluster names do not match: %s <-> %s",
 			name, m.config.ClusterName)
