@@ -488,7 +488,7 @@ func (m *Memberlist) gossip() {
 		for _, node := range kNodes {
 			// Send the compound message
 			destAddr := &net.UDPAddr{IP: node.Addr, Port: int(node.Port)}
-			if err := m.rawSendMsg(destAddr, compound.Bytes()); err != nil {
+			if err := m.rawSendMsgUDP(destAddr, compound.Bytes()); err != nil {
 				m.logger.Printf("[ERR] memberlist: Failed to send gossip to %s: %s", destAddr, err)
 			}
 		}
@@ -779,6 +779,7 @@ func (m *Memberlist) refute(me *nodeState, accusedInc uint32) {
 	a := alive{
 		Incarnation: inc,
 		Node:        me.Name,
+		ClusterName: m.config.ClusterName,
 		Addr:        me.Addr,
 		Port:        me.Port,
 		Meta:        me.Meta,

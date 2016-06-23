@@ -198,21 +198,8 @@ type Config struct {
 func DefaultLANConfig() *Config {
 	hostname, _ := os.Hostname()
 	return &Config{
-		Name:             hostname,
-		ClusterName:      "default",
-		BindAddr:         "0.0.0.0",
-		BindPort:         7946,
-		AdvertiseAddr:    "",
-		AdvertisePort:    7946,
-		ProtocolVersion:  ProtocolVersionMax,
-		TCPTimeout:       10 * time.Second,       // Timeout after 10 seconds
-		IndirectChecks:   3,                      // Use 3 nodes for the indirect ping
-		RetransmitMult:   4,                      // Retransmit a message 4 * log(N+1) nodes
-		SuspicionMult:    5,                      // Suspect a node for 5 * log(N+1) * Interval
-		PushPullInterval: 30 * time.Second,       // Low frequency
-		ProbeTimeout:     500 * time.Millisecond, // Reasonable RTT time for LAN
-		ProbeInterval:    1 * time.Second,        // Failure check every second
 		Name:                    hostname,
+		ClusterName:             "default",
 		BindAddr:                "0.0.0.0",
 		BindPort:                7946,
 		AdvertiseAddr:           "",
