@@ -252,7 +252,8 @@ func (m *Memberlist) probeNode(node *nodeState) {
 		} else {
 			msgs = append(msgs, buf.Bytes())
 		}
-		s := suspect{Incarnation: node.Incarnation, Node: node.Name, From: m.config.Name}
+		s := suspect{Incarnation: node.Incarnation, Node: node.Name, From: m.config.Name,
+			ClusterName: m.config.ClusterName}
 		if buf, err := encode(suspectMsg, &s); err != nil {
 			m.logger.Printf("[ERR] memberlist: Failed to encode suspect message: %s", err)
 			return
@@ -1043,7 +1044,8 @@ func (m *Memberlist) suspectNode(s *suspect) {
 
 			m.logger.Printf("[INFO] memberlist: Marking %s as failed, suspect timeout reached (%d peer confirmations)",
 				state.Name, numConfirmations)
-			d := dead{Incarnation: state.Incarnation, Node: state.Name, From: m.config.Name}
+			d := dead{Incarnation: state.Incarnation, Node: state.Name,
+				From: m.config.Name, ClusterName: m.config.ClusterName}
 			m.deadNode(&d)
 		}
 	}
