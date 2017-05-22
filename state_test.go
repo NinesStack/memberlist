@@ -8,10 +8,15 @@ import (
 	"time"
 )
 
+const (
+	clusterName = "bocaccio"
+)
+
 func HostMemberlist(host string, t *testing.T, f func(*Config)) *Memberlist {
 	c := DefaultLANConfig()
 	c.Name = host
 	c.BindAddr = host
+	c.ClusterName = clusterName
 	if f != nil {
 		f(c)
 	}
@@ -1661,6 +1666,7 @@ func TestMemberlist_GossipToDead(t *testing.T) {
 
 	m1 := HostMemberlist(addr1.String(), t, func(c *Config) {
 		c.GossipInterval = time.Millisecond
+		c.GossipMessages = 1
 		c.GossipToTheDeadTime = 100 * time.Millisecond
 	})
 	m2 := HostMemberlist(addr2.String(), t, func(c *Config) {
@@ -1670,9 +1676,9 @@ func TestMemberlist_GossipToDead(t *testing.T) {
 	defer m1.Shutdown()
 	defer m2.Shutdown()
 
-	a1 := alive{Node: addr1.String(), Addr: ip1, Port: 7946, Incarnation: 1}
+	a1 := alive{Node: addr1.String(), Addr: ip1, Port: 7946, Incarnation: 1, ClusterName: clusterName}
 	m1.aliveNode(&a1, nil, true)
-	a2 := alive{Node: addr2.String(), Addr: ip2, Port: 7946, Incarnation: 1}
+	a2 := alive{Node: addr2.String(), Addr: ip2, Port: 7946, Incarnation: 1, ClusterName: clusterName}
 	m1.aliveNode(&a2, nil, false)
 
 	// Shouldn't send anything to m2 here, node has been dead for 2x the GossipToTheDeadTime
