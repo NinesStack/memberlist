@@ -766,24 +766,35 @@ func TestMemberList_ProbeNode_Buddy(t *testing.T) {
 		c.ProbeInterval = 10 * time.Millisecond
 		c.ClusterName = clusterName
 	})
+    m2 := HostMemberlist(addr2.String(), t, nil)
 
 	a1 := alive{Node: addr1.String(), ClusterName: clusterName, Addr: ip1, Port: 7946, Incarnation: 1}
-	m1.aliveNode(&a1, nil, true)
 	a2 := alive{Node: addr2.String(), ClusterName: clusterName, Addr: ip2, Port: 7946, Incarnation: 1}
+
+	m1.aliveNode(&a1, nil, true)
 	m1.aliveNode(&a2, nil, false)
+    m2.aliveNode(&a2, nil, true)
 
-	n := m1.nodeMap[addr2.String()]
-	m1.probeNode(n)
+    // Force the state to suspect so we piggyback a suspect message with the ping.
+    // We should see this get refuted later, and the ping will succeed.
+    n := m1.nodeMap[addr2.String()]
+    n.State = stateSuspect
+    m1.probeNode(n)
 
-	// Should be marked alive
-	if n.State != stateAlive {
-		t.Fatalf("Expect node to be alive")
-	}
+    // Make sure a ping was sent.
+    if m1.sequenceNum != 1 {
+        t.Fatalf("bad seqno %v", m1.sequenceNum)
+    }
 
-	// Should increment seqno
-	if m1.sequenceNum != 1 {
-		t.Fatalf("bad seqno %v", m1.sequenceNum)
-	}
+    // Check a broadcast is queued.
+    if num := m2.broadcasts.NumQueued(); num != 1 {
+        t.Fatalf("expected only one queued message: %d", num)
+    }
+
+    // Should be alive msg.
+    if messageType(m2.broadcasts.bcQueue[0].b.Message()[0]) != aliveMsg {
+        t.Fatalf("expected queued alive msg")
+    }
 }
 
 func TestMemberList_Ping(t *testing.T) {
