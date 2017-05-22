@@ -39,7 +39,7 @@ func TestMemberList_Probe(t *testing.T) {
 
 	a1 := alive{
 		Node:        addr1.String(),
-		ClusterName: m1.config.ClusterName,
+		ClusterName: m1.ClusterName(),
 		Addr:        []byte(addr1),
 		Port:        uint16(m1.config.BindPort),
 		Incarnation: 1,
@@ -47,7 +47,7 @@ func TestMemberList_Probe(t *testing.T) {
 	m1.aliveNode(&a1, nil, true)
 	a2 := alive{
 		Node:        addr2.String(),
-		ClusterName: m1.config.ClusterName,
+		ClusterName: m1.ClusterName(),
 		Addr:        []byte(addr2),
 		Port:        uint16(m2.config.BindPort),
 		Incarnation: 1,
@@ -86,13 +86,13 @@ func TestMemberList_ProbeNode_Suspect(t *testing.T) {
 	m2 := HostMemberlist(addr2.String(), t, nil)
 	m3 := HostMemberlist(addr3.String(), t, nil)
 
-	a1 := alive{Node: addr1.String(), ClusterName: m1.config.ClusterName, Addr: ip1, Port: 7946, Incarnation: 1}
+	a1 := alive{Node: addr1.String(), ClusterName: m1.ClusterName(), Addr: ip1, Port: 7946, Incarnation: 1}
 	m1.aliveNode(&a1, nil, true)
-	a2 := alive{Node: addr2.String(), ClusterName: m1.config.ClusterName, Addr: ip2, Port: 7946, Incarnation: 1}
+	a2 := alive{Node: addr2.String(), ClusterName: m1.ClusterName(), Addr: ip2, Port: 7946, Incarnation: 1}
 	m1.aliveNode(&a2, nil, false)
-	a3 := alive{Node: addr3.String(), ClusterName: m1.config.ClusterName, Addr: ip3, Port: 7946, Incarnation: 1}
+	a3 := alive{Node: addr3.String(), ClusterName: m1.ClusterName(), Addr: ip3, Port: 7946, Incarnation: 1}
 	m1.aliveNode(&a3, nil, false)
-	a4 := alive{Node: addr4.String(), ClusterName: m1.config.ClusterName, Addr: ip4, Port: 7946, Incarnation: 1}
+	a4 := alive{Node: addr4.String(), ClusterName: m1.ClusterName(), Addr: ip4, Port: 7946, Incarnation: 1}
 	m1.aliveNode(&a4, nil, false)
 
 	n := m1.nodeMap[addr4.String()]
@@ -135,7 +135,7 @@ func TestMemberList_ProbeNode_Suspect_Dogpile(t *testing.T) {
 			c.SuspicionMult = 5
 			c.SuspicionMaxTimeoutMult = 2
 		})
-		a := alive{Node: addr.String(), Addr: []byte(addr), Port: 7946, Incarnation: 1, ClusterName: m.config.ClusterName}
+		a := alive{Node: addr.String(), Addr: []byte(addr), Port: 7946, Incarnation: 1, ClusterName: m.ClusterName()}
 		m.aliveNode(&a, nil, true)
 
 		// Make all but one peer be an real, alive instance.
@@ -143,14 +143,14 @@ func TestMemberList_ProbeNode_Suspect_Dogpile(t *testing.T) {
 		for j := 0; j < c.numPeers-1; j++ {
 			peerAddr := getBindAddr()
 			peers = append(peers, HostMemberlist(peerAddr.String(), t, nil))
-			a = alive{Node: peerAddr.String(), Addr: []byte(peerAddr), Port: 7946, Incarnation: 1, ClusterName: m.config.ClusterName}
+			a = alive{Node: peerAddr.String(), Addr: []byte(peerAddr), Port: 7946, Incarnation: 1, ClusterName: m.ClusterName()}
 			m.aliveNode(&a, nil, false)
 		}
 
 		// Just use a bogus address for the last peer so it doesn't respond
 		// to pings, but tell the memberlist it's alive.
 		badPeerAddr := getBindAddr()
-		a = alive{Node: badPeerAddr.String(), Addr: []byte(badPeerAddr), Port: 7946, Incarnation: 1, ClusterName: m.config.ClusterName}
+		a = alive{Node: badPeerAddr.String(), Addr: []byte(badPeerAddr), Port: 7946, Incarnation: 1, ClusterName: m.ClusterName()}
 		m.aliveNode(&a, nil, false)
 
 		// Force a probe, which should start us into the suspect state.
@@ -212,11 +212,11 @@ func TestMemberList_ProbeNode_FallbackTCP(t *testing.T) {
 	m4 := HostMemberlist(addr4.String(), t, nil)
 	defer m4.Shutdown()
 
-	a1 := alive{Node: addr1.String(), Addr: ip1, Port: 7946, Incarnation: 1, ClusterName: m1.config.ClusterName}
+	a1 := alive{Node: addr1.String(), Addr: ip1, Port: 7946, Incarnation: 1, ClusterName: m1.ClusterName()}
 	m1.aliveNode(&a1, nil, true)
-	a2 := alive{Node: addr2.String(), Addr: ip2, Port: 7946, Incarnation: 1, ClusterName: m1.config.ClusterName}
+	a2 := alive{Node: addr2.String(), Addr: ip2, Port: 7946, Incarnation: 1, ClusterName: m1.ClusterName()}
 	m1.aliveNode(&a2, nil, false)
-	a3 := alive{Node: addr3.String(), Addr: ip3, Port: 7946, Incarnation: 1, ClusterName: m1.config.ClusterName}
+	a3 := alive{Node: addr3.String(), Addr: ip3, Port: 7946, Incarnation: 1, ClusterName: m1.ClusterName()}
 	m1.aliveNode(&a3, nil, false)
 
 	// Make sure m4 is configured with the same protocol version as m1 so
@@ -225,7 +225,8 @@ func TestMemberList_ProbeNode_FallbackTCP(t *testing.T) {
 		Node:        addr4.String(),
 		Addr:        ip4,
 		Port:        7946,
-		Incarnation: 1, ClusterName: m1.config.ClusterName,
+		Incarnation: 1,
+		ClusterName: m1.ClusterName(),
 		Vsn: []uint8{
 			ProtocolVersionMin,
 			ProtocolVersionMax,
@@ -330,11 +331,11 @@ func TestMemberList_ProbeNode_FallbackTCP_Disabled(t *testing.T) {
 	m4 := HostMemberlist(addr4.String(), t, nil)
 	defer m4.Shutdown()
 
-	a1 := alive{Node: addr1.String(), Addr: ip1, Port: 7946, Incarnation: 1, ClusterName: m1.config.ClusterName}
+	a1 := alive{Node: addr1.String(), Addr: ip1, Port: 7946, Incarnation: 1, ClusterName: m1.ClusterName()}
 	m1.aliveNode(&a1, nil, true)
-	a2 := alive{Node: addr2.String(), Addr: ip2, Port: 7946, Incarnation: 1, ClusterName: m1.config.ClusterName}
+	a2 := alive{Node: addr2.String(), Addr: ip2, Port: 7946, Incarnation: 1, ClusterName: m1.ClusterName()}
 	m1.aliveNode(&a2, nil, false)
-	a3 := alive{Node: addr3.String(), Addr: ip3, Port: 7946, Incarnation: 1, ClusterName: m1.config.ClusterName}
+	a3 := alive{Node: addr3.String(), Addr: ip3, Port: 7946, Incarnation: 1, ClusterName: m1.ClusterName()}
 	m1.aliveNode(&a3, nil, false)
 
 	// Make sure m4 is configured with the same protocol version as m1 so
@@ -343,7 +344,8 @@ func TestMemberList_ProbeNode_FallbackTCP_Disabled(t *testing.T) {
 		Node:        addr4.String(),
 		Addr:        ip4,
 		Port:        7946,
-		Incarnation: 1, ClusterName: m1.config.ClusterName,
+		Incarnation: 1,
+		ClusterName: m1.ClusterName(),
 		Vsn: []uint8{
 			ProtocolVersionMin,
 			ProtocolVersionMax,
@@ -420,11 +422,11 @@ func TestMemberList_ProbeNode_FallbackTCP_OldProtocol(t *testing.T) {
 	m4 := HostMemberlist(addr4.String(), t, nil)
 	defer m4.Shutdown()
 
-	a1 := alive{Node: addr1.String(), Addr: ip1, Port: 7946, Incarnation: 1, ClusterName: m1.config.ClusterName}
+	a1 := alive{Node: addr1.String(), Addr: ip1, Port: 7946, Incarnation: 1, ClusterName: m1.ClusterName()}
 	m1.aliveNode(&a1, nil, true)
-	a2 := alive{Node: addr2.String(), Addr: ip2, Port: 7946, Incarnation: 1, ClusterName: m1.config.ClusterName}
+	a2 := alive{Node: addr2.String(), Addr: ip2, Port: 7946, Incarnation: 1, ClusterName: m1.ClusterName()}
 	m1.aliveNode(&a2, nil, false)
-	a3 := alive{Node: addr3.String(), Addr: ip3, Port: 7946, Incarnation: 1, ClusterName: m1.config.ClusterName}
+	a3 := alive{Node: addr3.String(), Addr: ip3, Port: 7946, Incarnation: 1, ClusterName: m1.ClusterName()}
 	m1.aliveNode(&a3, nil, false)
 
 	// Set up m4 so that it doesn't understand a version of the protocol
@@ -433,7 +435,8 @@ func TestMemberList_ProbeNode_FallbackTCP_OldProtocol(t *testing.T) {
 		Node:        addr4.String(),
 		Addr:        ip4,
 		Port:        7946,
-		Incarnation: 1, ClusterName: m1.config.ClusterName,
+		Incarnation: 1,
+		ClusterName: m1.ClusterName(),
 		Vsn: []uint8{
 			ProtocolVersionMin,
 			ProtocolVersion2Compatible,
@@ -521,15 +524,15 @@ func TestMemberList_ProbeNode_Awareness_Degraded(t *testing.T) {
 		m1.config.DelegateProtocolVersion,
 	}
 
-	a1 := alive{Node: addr1.String(), Addr: ip1, Port: 7946, Incarnation: 1, ClusterName: m1.config.ClusterName, Vsn: vsn}
+	a1 := alive{Node: addr1.String(), Addr: ip1, Port: 7946, Incarnation: 1, ClusterName: m1.ClusterName(), Vsn: vsn}
 	m1.aliveNode(&a1, nil, true)
-	a2 := alive{Node: addr2.String(), Addr: ip2, Port: 7946, Incarnation: 1, ClusterName: m1.config.ClusterName, Vsn: vsn}
+	a2 := alive{Node: addr2.String(), Addr: ip2, Port: 7946, Incarnation: 1, ClusterName: m1.ClusterName(), Vsn: vsn}
 	m1.aliveNode(&a2, nil, false)
-	a3 := alive{Node: addr3.String(), Addr: ip3, Port: 7946, Incarnation: 1, ClusterName: m1.config.ClusterName, Vsn: vsn}
+	a3 := alive{Node: addr3.String(), Addr: ip3, Port: 7946, Incarnation: 1, ClusterName: m1.ClusterName(), Vsn: vsn}
 	m1.aliveNode(&a3, nil, false)
 
 	// Node 4 never gets started.
-	a4 := alive{Node: addr4.String(), Addr: ip4, Port: 7946, Incarnation: 1, ClusterName: m1.config.ClusterName, Vsn: vsn}
+	a4 := alive{Node: addr4.String(), Addr: ip4, Port: 7946, Incarnation: 1, ClusterName: m1.ClusterName(), Vsn: vsn}
 	m1.aliveNode(&a4, nil, false)
 
 	// Start the health in a degraded state.
@@ -582,9 +585,9 @@ func TestMemberList_ProbeNode_Awareness_Improved(t *testing.T) {
 	m2 := HostMemberlist(addr2.String(), t, nil)
 	defer m2.Shutdown()
 
-	a1 := alive{Node: addr1.String(), Addr: ip1, Port: 7946, Incarnation: 1, ClusterName: m1.config.ClusterName}
+	a1 := alive{Node: addr1.String(), Addr: ip1, Port: 7946, Incarnation: 1, ClusterName: m1.ClusterName()}
 	m1.aliveNode(&a1, nil, true)
-	a2 := alive{Node: addr2.String(), Addr: ip2, Port: 7946, Incarnation: 1, ClusterName: m1.config.ClusterName}
+	a2 := alive{Node: addr2.String(), Addr: ip2, Port: 7946, Incarnation: 1, ClusterName: m1.ClusterName()}
 	m1.aliveNode(&a2, nil, false)
 
 	// Start the health in a degraded state.
@@ -642,15 +645,15 @@ func TestMemberList_ProbeNode_Awareness_MissedNack(t *testing.T) {
 		m1.config.DelegateProtocolVersion,
 	}
 
-	a1 := alive{Node: addr1.String(), Addr: ip1, Port: 7946, Incarnation: 1, ClusterName: m1.config.ClusterName, Vsn: vsn}
+	a1 := alive{Node: addr1.String(), Addr: ip1, Port: 7946, Incarnation: 1, ClusterName: m1.ClusterName(), Vsn: vsn}
 	m1.aliveNode(&a1, nil, true)
-	a2 := alive{Node: addr2.String(), Addr: ip2, Port: 7946, Incarnation: 1, ClusterName: m1.config.ClusterName, Vsn: vsn}
+	a2 := alive{Node: addr2.String(), Addr: ip2, Port: 7946, Incarnation: 1, ClusterName: m1.ClusterName(), Vsn: vsn}
 	m1.aliveNode(&a2, nil, false)
 
 	// Node 3 and node 4 never get started.
-	a3 := alive{Node: addr3.String(), Addr: ip3, Port: 7946, Incarnation: 1, ClusterName: m1.config.ClusterName, Vsn: vsn}
+	a3 := alive{Node: addr3.String(), Addr: ip3, Port: 7946, Incarnation: 1, ClusterName: m1.ClusterName(), Vsn: vsn}
 	m1.aliveNode(&a3, nil, false)
-	a4 := alive{Node: addr4.String(), Addr: ip4, Port: 7946, Incarnation: 1, ClusterName: m1.config.ClusterName, Vsn: vsn}
+	a4 := alive{Node: addr4.String(), Addr: ip4, Port: 7946, Incarnation: 1, ClusterName: m1.ClusterName(), Vsn: vsn}
 	m1.aliveNode(&a4, nil, false)
 
 	// Make sure health looks good.
@@ -705,15 +708,15 @@ func TestMemberList_ProbeNode_Awareness_OldProtocol(t *testing.T) {
 	m3 := HostMemberlist(addr3.String(), t, nil)
 	defer m3.Shutdown()
 
-	a1 := alive{Node: addr1.String(), Addr: ip1, Port: 7946, Incarnation: 1, ClusterName: m1.config.ClusterName}
+	a1 := alive{Node: addr1.String(), Addr: ip1, Port: 7946, Incarnation: 1, ClusterName: m1.ClusterName()}
 	m1.aliveNode(&a1, nil, true)
-	a2 := alive{Node: addr2.String(), Addr: ip2, Port: 7946, Incarnation: 1, ClusterName: m1.config.ClusterName}
+	a2 := alive{Node: addr2.String(), Addr: ip2, Port: 7946, Incarnation: 1, ClusterName: m1.ClusterName()}
 	m1.aliveNode(&a2, nil, false)
-	a3 := alive{Node: addr3.String(), Addr: ip3, Port: 7946, Incarnation: 1, ClusterName: m1.config.ClusterName}
+	a3 := alive{Node: addr3.String(), Addr: ip3, Port: 7946, Incarnation: 1, ClusterName: m1.ClusterName()}
 	m1.aliveNode(&a3, nil, false)
 
 	// Node 4 never gets started.
-	a4 := alive{Node: addr4.String(), Addr: ip4, Port: 7946, Incarnation: 1, ClusterName: m1.config.ClusterName}
+	a4 := alive{Node: addr4.String(), Addr: ip4, Port: 7946, Incarnation: 1, ClusterName: m1.ClusterName()}
 	m1.aliveNode(&a4, nil, false)
 
 	// Make sure health looks good.
@@ -795,9 +798,9 @@ func TestMemberList_Ping(t *testing.T) {
 	})
 	_ = HostMemberlist(addr2.String(), t, nil)
 
-	a1 := alive{Node: addr1.String(), Addr: ip1, Port: 7946, Incarnation: 1, ClusterName: m1.config.ClusterName}
+	a1 := alive{Node: addr1.String(), Addr: ip1, Port: 7946, Incarnation: 1, ClusterName: m1.ClusterName()}
 	m1.aliveNode(&a1, nil, true)
-	a2 := alive{Node: addr2.String(), Addr: ip2, Port: 7946, Incarnation: 1, ClusterName: m1.config.ClusterName}
+	a2 := alive{Node: addr2.String(), Addr: ip2, Port: 7946, Incarnation: 1, ClusterName: m1.ClusterName()}
 	m1.aliveNode(&a2, nil, false)
 
 	// Do a legit ping.
@@ -823,13 +826,13 @@ func TestMemberList_Ping(t *testing.T) {
 
 func TestMemberList_ResetNodes(t *testing.T) {
 	m := GetMemberlist(t)
-	a1 := alive{Node: "test1", ClusterName: m.config.ClusterName, Addr: []byte{127, 0, 0, 1}, Incarnation: 1}
+	a1 := alive{Node: "test1", ClusterName: m.ClusterName(), Addr: []byte{127, 0, 0, 1}, Incarnation: 1}
 	m.aliveNode(&a1, nil, false)
-	a2 := alive{Node: "test2", ClusterName: m.config.ClusterName, Addr: []byte{127, 0, 0, 2}, Incarnation: 1}
+	a2 := alive{Node: "test2", ClusterName: m.ClusterName(), Addr: []byte{127, 0, 0, 2}, Incarnation: 1}
 	m.aliveNode(&a2, nil, false)
-	a3 := alive{Node: "test3", ClusterName: m.config.ClusterName, Addr: []byte{127, 0, 0, 3}, Incarnation: 1}
+	a3 := alive{Node: "test3", ClusterName: m.ClusterName(), Addr: []byte{127, 0, 0, 3}, Incarnation: 1}
 	m.aliveNode(&a3, nil, false)
-	d := dead{Node: "test2", ClusterName: m.config.ClusterName, Incarnation: 1}
+	d := dead{Node: "test2", ClusterName: m.ClusterName(), Incarnation: 1}
 	m.deadNode(&d)
 
 	m.config.GossipToTheDeadTime = 100 * time.Millisecond
@@ -1011,7 +1014,7 @@ func TestMemberList_AliveNode_NewNode(t *testing.T) {
 	m := GetMemberlist(t)
 	m.config.Events = &ChannelEventDelegate{ch}
 
-	a := alive{Node: "test", ClusterName: m.config.ClusterName, Addr: []byte{127, 0, 0, 1}, Incarnation: 1}
+	a := alive{Node: "test", ClusterName: m.ClusterName(), Addr: []byte{127, 0, 0, 1}, Incarnation: 1}
 	m.aliveNode(&a, nil, false)
 
 	if len(m.nodes) != 1 {
@@ -1053,7 +1056,7 @@ func TestMemberList_AliveNode_SuspectNode(t *testing.T) {
 	ch := make(chan NodeEvent, 1)
 	m := GetMemberlist(t)
 
-	a := alive{Node: "test", ClusterName: m.config.ClusterName, Addr: []byte{127, 0, 0, 1}, Incarnation: 1}
+	a := alive{Node: "test", ClusterName: m.ClusterName(), Addr: []byte{127, 0, 0, 1}, Incarnation: 1}
 	m.aliveNode(&a, nil, false)
 
 	// Listen only after first join
@@ -1098,7 +1101,7 @@ func TestMemberList_AliveNode_Idempotent(t *testing.T) {
 	ch := make(chan NodeEvent, 1)
 	m := GetMemberlist(t)
 
-	a := alive{Node: "test", ClusterName: m.config.ClusterName, Addr: []byte{127, 0, 0, 1}, Incarnation: 1}
+	a := alive{Node: "test", ClusterName: m.ClusterName(), Addr: []byte{127, 0, 0, 1}, Incarnation: 1}
 	m.aliveNode(&a, nil, false)
 
 	// Listen only after first join
@@ -1141,7 +1144,9 @@ func TestMemberList_AliveNode_ChangeMeta(t *testing.T) {
 		Node:        "test",
 		Addr:        []byte{127, 0, 0, 1},
 		Meta:        []byte("val1"),
-		Incarnation: 1, ClusterName: m.config.ClusterName}
+		Incarnation: 1,
+		ClusterName: m.ClusterName(),
+	}
 	m.aliveNode(&a, nil, false)
 
 	// Listen only after first join
@@ -1180,7 +1185,7 @@ func TestMemberList_AliveNode_ChangeMeta(t *testing.T) {
 
 func TestMemberList_AliveNode_Refute(t *testing.T) {
 	m := GetMemberlist(t)
-	a := alive{Node: m.config.Name, ClusterName: m.config.ClusterName, Addr: []byte{127, 0, 0, 1}, Incarnation: 1}
+	a := alive{Node: m.config.Name, ClusterName: m.ClusterName(), Addr: []byte{127, 0, 0, 1}, Incarnation: 1}
 	m.aliveNode(&a, nil, true)
 
 	// Clear queue
@@ -1189,7 +1194,7 @@ func TestMemberList_AliveNode_Refute(t *testing.T) {
 	// Conflicting alive
 	s := alive{
 		Node:        m.config.Name,
-		ClusterName: m.config.ClusterName,
+		ClusterName: m.ClusterName(),
 		Addr:        []byte{127, 0, 0, 1},
 		Incarnation: 2,
 		Meta:        []byte("foo"),
@@ -1218,7 +1223,7 @@ func TestMemberList_AliveNode_Refute(t *testing.T) {
 
 func TestMemberList_SuspectNode_NoNode(t *testing.T) {
 	m := GetMemberlist(t)
-	s := suspect{Node: "test", Incarnation: 1, ClusterName: m.config.ClusterName}
+	s := suspect{Node: "test", Incarnation: 1, ClusterName: m.ClusterName()}
 	m.suspectNode(&s)
 	if len(m.nodes) != 0 {
 		t.Fatalf("don't expect nodes")
@@ -1229,13 +1234,13 @@ func TestMemberList_SuspectNode(t *testing.T) {
 	m := GetMemberlist(t)
 	m.config.ProbeInterval = time.Millisecond
 	m.config.SuspicionMult = 1
-	a := alive{Node: "test", ClusterName: m.config.ClusterName, Addr: []byte{127, 0, 0, 1}, Incarnation: 1}
+	a := alive{Node: "test", ClusterName: m.ClusterName(), Addr: []byte{127, 0, 0, 1}, Incarnation: 1}
 	m.aliveNode(&a, nil, false)
 
 	state := m.nodeMap["test"]
 	state.StateChange = state.StateChange.Add(-time.Hour)
 
-	s := suspect{Node: "test", Incarnation: 1, ClusterName: m.config.ClusterName}
+	s := suspect{Node: "test", Incarnation: 1, ClusterName: m.ClusterName()}
 	m.suspectNode(&s)
 
 	if state.State != stateSuspect {
@@ -1284,13 +1289,13 @@ func TestMemberList_SuspectNode(t *testing.T) {
 
 func TestMemberList_SuspectNode_DoubleSuspect(t *testing.T) {
 	m := GetMemberlist(t)
-	a := alive{Node: "test", ClusterName: m.config.ClusterName, Addr: []byte{127, 0, 0, 1}, Incarnation: 1}
+	a := alive{Node: "test", ClusterName: m.ClusterName(), Addr: []byte{127, 0, 0, 1}, Incarnation: 1}
 	m.aliveNode(&a, nil, false)
 
 	state := m.nodeMap["test"]
 	state.StateChange = state.StateChange.Add(-time.Hour)
 
-	s := suspect{Node: "test", Incarnation: 1, ClusterName: m.config.ClusterName}
+	s := suspect{Node: "test", Incarnation: 1, ClusterName: m.ClusterName()}
 	m.suspectNode(&s)
 
 	if state.State != stateSuspect {
@@ -1321,7 +1326,7 @@ func TestMemberList_SuspectNode_DoubleSuspect(t *testing.T) {
 
 func TestMemberList_SuspectNode_OldSuspect(t *testing.T) {
 	m := GetMemberlist(t)
-	a := alive{Node: "test", ClusterName: m.config.ClusterName, Addr: []byte{127, 0, 0, 1}, Incarnation: 10}
+	a := alive{Node: "test", ClusterName: m.ClusterName(), Addr: []byte{127, 0, 0, 1}, Incarnation: 10}
 	m.aliveNode(&a, nil, false)
 
 	state := m.nodeMap["test"]
@@ -1330,7 +1335,7 @@ func TestMemberList_SuspectNode_OldSuspect(t *testing.T) {
 	// Clear queue
 	m.broadcasts.Reset()
 
-	s := suspect{Node: "test", Incarnation: 1, ClusterName: m.config.ClusterName}
+	s := suspect{Node: "test", Incarnation: 1, ClusterName: m.ClusterName()}
 	m.suspectNode(&s)
 
 	if state.State != stateAlive {
@@ -1345,7 +1350,7 @@ func TestMemberList_SuspectNode_OldSuspect(t *testing.T) {
 
 func TestMemberList_SuspectNode_Refute(t *testing.T) {
 	m := GetMemberlist(t)
-	a := alive{Node: m.config.Name, ClusterName: m.config.ClusterName, Addr: []byte{127, 0, 0, 1}, Incarnation: 1}
+	a := alive{Node: m.config.Name, ClusterName: m.ClusterName(), Addr: []byte{127, 0, 0, 1}, Incarnation: 1}
 	m.aliveNode(&a, nil, true)
 
 	// Clear queue
@@ -1356,7 +1361,7 @@ func TestMemberList_SuspectNode_Refute(t *testing.T) {
 		t.Fatalf("bad: %d", score)
 	}
 
-	s := suspect{Node: m.config.Name, Incarnation: 1, ClusterName: m.config.ClusterName}
+	s := suspect{Node: m.config.Name, Incarnation: 1, ClusterName: m.ClusterName()}
 	m.suspectNode(&s)
 
 	state := m.nodeMap[m.config.Name]
@@ -1382,7 +1387,7 @@ func TestMemberList_SuspectNode_Refute(t *testing.T) {
 
 func TestMemberList_DeadNode_NoNode(t *testing.T) {
 	m := GetMemberlist(t)
-	d := dead{Node: "test", ClusterName: m.config.ClusterName, Incarnation: 1}
+	d := dead{Node: "test", ClusterName: m.ClusterName(), Incarnation: 1}
 	m.deadNode(&d)
 	if len(m.nodes) != 0 {
 		t.Fatalf("don't expect nodes")
@@ -1393,7 +1398,7 @@ func TestMemberList_DeadNode(t *testing.T) {
 	ch := make(chan NodeEvent, 1)
 	m := GetMemberlist(t)
 	m.config.Events = &ChannelEventDelegate{ch}
-	a := alive{Node: "test", ClusterName: m.config.ClusterName, Addr: []byte{127, 0, 0, 1}, Incarnation: 1}
+	a := alive{Node: "test", ClusterName: m.ClusterName(), Addr: []byte{127, 0, 0, 1}, Incarnation: 1}
 	m.aliveNode(&a, nil, false)
 
 	// Read the join event
@@ -1402,7 +1407,7 @@ func TestMemberList_DeadNode(t *testing.T) {
 	state := m.nodeMap["test"]
 	state.StateChange = state.StateChange.Add(-time.Hour)
 
-	d := dead{Node: "test", ClusterName: m.config.ClusterName, Incarnation: 1}
+	d := dead{Node: "test", ClusterName: m.ClusterName(), Incarnation: 1}
 	m.deadNode(&d)
 
 	if state.State != stateDead {
@@ -1437,13 +1442,13 @@ func TestMemberList_DeadNode(t *testing.T) {
 func TestMemberList_DeadNode_Double(t *testing.T) {
 	ch := make(chan NodeEvent, 1)
 	m := GetMemberlist(t)
-	a := alive{Node: "test", ClusterName: m.config.ClusterName, Addr: []byte{127, 0, 0, 1}, Incarnation: 1}
+	a := alive{Node: "test", ClusterName: m.ClusterName(), Addr: []byte{127, 0, 0, 1}, Incarnation: 1}
 	m.aliveNode(&a, nil, false)
 
 	state := m.nodeMap["test"]
 	state.StateChange = state.StateChange.Add(-time.Hour)
 
-	d := dead{Node: "test", ClusterName: m.config.ClusterName, Incarnation: 1}
+	d := dead{Node: "test", ClusterName: m.ClusterName(), Incarnation: 1}
 	m.deadNode(&d)
 
 	// Clear queue
@@ -1470,13 +1475,13 @@ func TestMemberList_DeadNode_Double(t *testing.T) {
 
 func TestMemberList_DeadNode_OldDead(t *testing.T) {
 	m := GetMemberlist(t)
-	a := alive{Node: "test", ClusterName: m.config.ClusterName, Addr: []byte{127, 0, 0, 1}, Incarnation: 10}
+	a := alive{Node: "test", ClusterName: m.ClusterName(), Addr: []byte{127, 0, 0, 1}, Incarnation: 10}
 	m.aliveNode(&a, nil, false)
 
 	state := m.nodeMap["test"]
 	state.StateChange = state.StateChange.Add(-time.Hour)
 
-	d := dead{Node: "test", ClusterName: m.config.ClusterName, Incarnation: 1}
+	d := dead{Node: "test", ClusterName: m.ClusterName(), Incarnation: 1}
 	m.deadNode(&d)
 
 	if state.State != stateAlive {
@@ -1486,10 +1491,10 @@ func TestMemberList_DeadNode_OldDead(t *testing.T) {
 
 func TestMemberList_DeadNode_AliveReplay(t *testing.T) {
 	m := GetMemberlist(t)
-	a := alive{Node: "test", ClusterName: m.config.ClusterName, Addr: []byte{127, 0, 0, 1}, Incarnation: 10}
+	a := alive{Node: "test", ClusterName: m.ClusterName(), Addr: []byte{127, 0, 0, 1}, Incarnation: 10}
 	m.aliveNode(&a, nil, false)
 
-	d := dead{Node: "test", ClusterName: m.config.ClusterName, Incarnation: 10}
+	d := dead{Node: "test", ClusterName: m.ClusterName(), Incarnation: 10}
 	m.deadNode(&d)
 
 	// Replay alive at same incarnation
@@ -1504,13 +1509,13 @@ func TestMemberList_DeadNode_AliveReplay(t *testing.T) {
 
 func TestMemberList_DeadNode_Refute(t *testing.T) {
 	m := GetMemberlist(t)
-	a := alive{Node: m.config.Name, ClusterName: m.config.ClusterName, Addr: []byte{127, 0, 0, 1}, Incarnation: 1}
+	a := alive{Node: m.config.Name, ClusterName: m.ClusterName(), Addr: []byte{127, 0, 0, 1}, Incarnation: 1}
 	m.aliveNode(&a, nil, true)
 
 	// Clear queue
 	m.broadcasts.Reset()
 
-	d := dead{Node: m.config.Name, ClusterName: m.config.ClusterName, Incarnation: 1}
+	d := dead{Node: m.config.Name, ClusterName: m.ClusterName(), Incarnation: 1}
 	m.deadNode(&d)
 
 	state := m.nodeMap[m.config.Name]
@@ -1536,14 +1541,14 @@ func TestMemberList_DeadNode_Refute(t *testing.T) {
 
 func TestMemberList_MergeState(t *testing.T) {
 	m := GetMemberlist(t)
-	a1 := alive{Node: "test1", ClusterName: m.config.ClusterName, Addr: []byte{127, 0, 0, 1}, Incarnation: 1}
+	a1 := alive{Node: "test1", ClusterName: m.ClusterName(), Addr: []byte{127, 0, 0, 1}, Incarnation: 1}
 	m.aliveNode(&a1, nil, false)
-	a2 := alive{Node: "test2", ClusterName: m.config.ClusterName, Addr: []byte{127, 0, 0, 2}, Incarnation: 1}
+	a2 := alive{Node: "test2", ClusterName: m.ClusterName(), Addr: []byte{127, 0, 0, 2}, Incarnation: 1}
 	m.aliveNode(&a2, nil, false)
-	a3 := alive{Node: "test3", ClusterName: m.config.ClusterName, Addr: []byte{127, 0, 0, 3}, Incarnation: 1}
+	a3 := alive{Node: "test3", ClusterName: m.ClusterName(), Addr: []byte{127, 0, 0, 3}, Incarnation: 1}
 	m.aliveNode(&a3, nil, false)
 
-	s := suspect{Node: "test1", Incarnation: 1, ClusterName: m.config.ClusterName}
+	s := suspect{Node: "test1", Incarnation: 1, ClusterName: m.ClusterName()}
 	m.suspectNode(&s)
 
 	remote := []pushNodeState{
@@ -1637,11 +1642,11 @@ func TestMemberlist_Gossip(t *testing.T) {
 	defer m1.Shutdown()
 	defer m2.Shutdown()
 
-	a1 := alive{Node: addr1.String(), ClusterName: m1.config.ClusterName, Addr: ip1, Port: 7946, Incarnation: 1}
+	a1 := alive{Node: addr1.String(), ClusterName: m1.ClusterName(), Addr: ip1, Port: 7946, Incarnation: 1}
 	m1.aliveNode(&a1, nil, true)
-	a2 := alive{Node: addr2.String(), ClusterName: m1.config.ClusterName, Addr: ip2, Port: 7946, Incarnation: 1}
+	a2 := alive{Node: addr2.String(), ClusterName: m1.ClusterName(), Addr: ip2, Port: 7946, Incarnation: 1}
 	m1.aliveNode(&a2, nil, false)
-	a3 := alive{Node: "172.0.0.1", ClusterName: m1.config.ClusterName, Addr: []byte{172, 0, 0, 1}, Incarnation: 1}
+	a3 := alive{Node: "172.0.0.1", ClusterName: m1.ClusterName(), Addr: []byte{172, 0, 0, 1}, Incarnation: 1}
 	m1.aliveNode(&a3, nil, false)
 
 	// Gossip should send all this to m2
@@ -1725,9 +1730,9 @@ func TestMemberlist_PushPull(t *testing.T) {
 	defer m1.Shutdown()
 	defer m2.Shutdown()
 
-	a1 := alive{Node: addr1.String(), ClusterName: m1.config.ClusterName, Addr: ip1, Port: 7946, Incarnation: 1}
+	a1 := alive{Node: addr1.String(), ClusterName: m1.ClusterName(), Addr: ip1, Port: 7946, Incarnation: 1}
 	m1.aliveNode(&a1, nil, true)
-	a2 := alive{Node: addr2.String(), ClusterName: m1.config.ClusterName, Addr: ip2, Port: 7946, Incarnation: 1}
+	a2 := alive{Node: addr2.String(), ClusterName: m1.ClusterName(), Addr: ip2, Port: 7946, Incarnation: 1}
 	m1.aliveNode(&a2, nil, false)
 
 	// Gossip should send all this to m2

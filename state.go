@@ -270,7 +270,7 @@ func (m *Memberlist) probeNode(node *nodeState) {
 			msgs = append(msgs, buf.Bytes())
 		}
 		s := suspect{Incarnation: node.Incarnation, Node: node.Name, From: m.config.Name,
-			ClusterName: m.config.ClusterName}
+			ClusterName: m.ClusterName()}
 		if buf, err := encode(suspectMsg, &s); err != nil {
 			m.logger.Printf("[ERR] memberlist: Failed to encode suspect message: %s", err)
 			return
@@ -415,7 +415,7 @@ func (m *Memberlist) probeNode(node *nodeState) {
 	// No acks received from target, suspect it as failed.
 	m.logger.Printf("[INFO] memberlist: Suspect %s has failed, no acks received", node.Name)
 	s := suspect{Incarnation: node.Incarnation, Node: node.Name, From: m.config.Name,
-		ClusterName: m.config.ClusterName}
+		ClusterName: m.ClusterName()}
 	m.suspectNode(&s)
 }
 
@@ -821,7 +821,7 @@ func (m *Memberlist) refute(me *nodeState, accusedInc uint32) {
 	a := alive{
 		Incarnation: inc,
 		Node:        me.Name,
-		ClusterName: m.config.ClusterName,
+		ClusterName: m.ClusterName(),
 		Addr:        me.Addr,
 		Port:        me.Port,
 		Meta:        me.Meta,
@@ -1086,7 +1086,7 @@ func (m *Memberlist) suspectNode(s *suspect) {
 			m.logger.Printf("[INFO] memberlist: Marking %s as failed, suspect timeout reached (%d peer confirmations)",
 				state.Name, numConfirmations)
 			d := dead{Incarnation: state.Incarnation, Node: state.Name,
-				From: m.config.Name, ClusterName: m.config.ClusterName}
+				From: m.config.Name, ClusterName: m.ClusterName()}
 			m.deadNode(&d)
 		}
 	}
@@ -1156,7 +1156,7 @@ func (m *Memberlist) mergeState(remote []pushNodeState) {
 			a := alive{
 				Incarnation: r.Incarnation,
 				Node:        r.Name,
-				ClusterName: m.config.ClusterName,
+				ClusterName: m.ClusterName(),
 				Addr:        r.Addr,
 				Port:        r.Port,
 				Meta:        r.Meta,
@@ -1170,7 +1170,7 @@ func (m *Memberlist) mergeState(remote []pushNodeState) {
 			fallthrough
 		case stateSuspect:
 			s := suspect{Incarnation: r.Incarnation, Node: r.Name, From: m.config.Name,
-				ClusterName: m.config.ClusterName}
+				ClusterName: m.ClusterName()}
 			m.suspectNode(&s)
 		}
 	}
