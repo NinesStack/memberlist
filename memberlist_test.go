@@ -385,6 +385,9 @@ func TestMemberList_ResolveAddr_TCP_First(t *testing.T) {
 	}
 	defer server.Shutdown()
 
+	m := GetMemberlist(t)
+	m.config.PreferTCPDNS = true
+
 	go func() {
 		if err := server.ListenAndServe(); err != nil && !strings.Contains(err.Error(), "use of closed network connection") {
 			t.Fatalf("err: %v", err)
@@ -406,7 +409,6 @@ func TestMemberList_ResolveAddr_TCP_First(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 
-	m := GetMemberlist(t)
 	m.config.DNSConfigPath = tmpFile.Name()
 	m.setAlive()
 	m.schedule()
@@ -428,7 +430,7 @@ func TestMemberList_ResolveAddr_TCP_First(t *testing.T) {
 			ipPort{net.ParseIP("2001:db8:a0b:12f0::1"), port},
 		}
 		if !reflect.DeepEqual(ips, expected) {
-			t.Fatalf("bad: %#v", ips)
+			t.Fatalf("\nGot: %#v\nExpected: %#v", ips, expected)
 		}
 	}
 }
@@ -974,7 +976,7 @@ func TestMemberlist_UserData(t *testing.T) {
 
 	// Ensure we got the messages
 	if len(d1.msgs) != 2 {
-		t.Fatalf("should have 2 messages!")
+		t.Fatalf("should have 2 messages! Had %d", len(d1.msgs))
 	}
 	if !reflect.DeepEqual(d1.msgs[0], []byte("test")) {
 		t.Fatalf("bad msg %v", d1.msgs[0])

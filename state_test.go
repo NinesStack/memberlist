@@ -751,14 +751,17 @@ func TestMemberList_ProbeNode_Buddy(t *testing.T) {
 	ip1 := []byte(addr1)
 	ip2 := []byte(addr2)
 
+	clusterName := "bocaccio"
+
 	m1 := HostMemberlist(addr1.String(), t, func(c *Config) {
 		c.ProbeTimeout = time.Millisecond
 		c.ProbeInterval = 10 * time.Millisecond
+		c.ClusterName = clusterName
 	})
 
-	a1 := alive{Node: addr1.String(), ClusterName: m1.config.ClusterName, Addr: ip1, Port: 7946, Incarnation: 1}
+	a1 := alive{Node: addr1.String(), ClusterName: clusterName, Addr: ip1, Port: 7946, Incarnation: 1}
 	m1.aliveNode(&a1, nil, true)
-	a2 := alive{Node: addr2.String(), ClusterName: m1.config.ClusterName, Addr: ip2, Port: 7946, Incarnation: 1}
+	a2 := alive{Node: addr2.String(), ClusterName: clusterName, Addr: ip2, Port: 7946, Incarnation: 1}
 	m1.aliveNode(&a2, nil, false)
 
 	n := m1.nodeMap[addr2.String()]
