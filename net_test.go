@@ -817,7 +817,7 @@ func TestHandleSuspect(t *testing.T) {
 	m1 := HostMemberlist(addr1.String(), t, nil)
 
 	// dummy address
-	addr := m1.udpListener.LocalAddr()
+	addr, _ := net.ResolveIPAddr("udp", "127.0.0.1/32")
 
 	a1 := alive{Node: "node1", ClusterName: m1.config.ClusterName, Addr: ip1, Port: 7946, Incarnation: 1}
 	a2 := alive{Node: "node2", ClusterName: m1.config.ClusterName, Addr: ip2, Port: 7946, Incarnation: 2}
@@ -895,7 +895,7 @@ func TestHandleAlive(t *testing.T) {
 	m1 := HostMemberlist(addr1.String(), t, nil)
 
 	// dummy address
-	addr := m1.udpListener.LocalAddr()
+	addr, _ := net.ResolveIPAddr("udp", "127.0.0.1/32")
 
 	a1 := alive{Node: "node1", ClusterName: m1.config.ClusterName, Addr: ip1, Port: 7946, Incarnation: 1}
 	a2 := alive{Node: "node2", ClusterName: m1.config.ClusterName, Addr: ip2, Port: 7946, Incarnation: 2}
@@ -944,7 +944,7 @@ func TestHandleDead(t *testing.T) {
 	m1 := HostMemberlist(addr1.String(), t, nil)
 
 	// dummy address
-	addr := m1.udpListener.LocalAddr()
+	addr, _ := net.ResolveIPAddr("udp", "127.0.0.1/32")
 
 	a1 := alive{Node: "node1", ClusterName: m1.config.ClusterName, Addr: ip1, Port: 7946, Incarnation: 1}
 	a2 := alive{Node: "node2", ClusterName: m1.config.ClusterName, Addr: ip2, Port: 7946, Incarnation: 2}

@@ -369,7 +369,7 @@ func (m *Memberlist) setAlive() error {
 		Incarnation: m.nextIncarnation(),
 		Node:        m.config.Name,
 		ClusterName: m.config.ClusterName,
-		Addr:        advertiseAddr,
+		Addr:        addr,
 		Port:        uint16(port),
 		Meta:        meta,
 		Vsn: []uint8{

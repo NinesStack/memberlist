@@ -263,7 +263,6 @@ func DefaultLANConfig() *Config {
 		GossipToTheDeadTime:  30 * time.Second,       // Same as push/pull
 		GossipVerifyIncoming: true,
 		GossipVerifyOutgoing: true,
-		GossipInterval: 200 * time.Millisecond, // Gossip more rapidly
 
 		EnableCompression: true, // Enable compression by default
 
