@@ -29,6 +29,11 @@ const (
 	lzwLitWidth = 8
 )
 
+var (
+	compressor *lzw.Writer
+	compressorBuf bytes.Buffer
+)
+
 func init() {
 	seed.Init()
 }
@@ -234,8 +239,14 @@ func hasPort(s string) bool {
 // compressPayload takes an opaque input buffer, compresses it
 // and wraps it in a compress{} message that is encoded.
 func compressPayload(inp []byte) (*bytes.Buffer, error) {
-	var buf bytes.Buffer
-	compressor := lzw.NewWriter(&buf, lzw.LSB, lzwLitWidth)
+	// Re-use LZW compression buffer. These things are huge.
+	if compressor == nil {
+		tmpCompressor := lzw.NewWriter(&compressorBuf, lzw.LSB, lzwLitWidth)
+		compressor = tmpCompressor.(*lzw.Writer)
+	} else {
+		compressorBuf.Reset()
+		compressor.Reset(&compressorBuf, lzw.LSB, lzwLitWidth)
+	}
 
 	_, err := compressor.Write(inp)
 	if err != nil {
@@ -250,7 +261,7 @@ func compressPayload(inp []byte) (*bytes.Buffer, error) {
 	// Create a compressed message
 	c := compress{
 		Algo: lzwAlgo,
-		Buf:  buf.Bytes(),
+		Buf:  compressorBuf.Bytes(),
 	}
 	return encode(compressMsg, &c)
 }

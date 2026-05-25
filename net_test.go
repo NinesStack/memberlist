@@ -825,17 +825,17 @@ func TestHandleSuspect(t *testing.T) {
 
 	a1buf, a1err := encode(aliveMsg, a1)
 	if a1err != nil {
-		t.Fatal("Unexpected error: %v", a1err)
+		t.Fatalf("Unexpected error: %v", a1err)
 	}
 
 	a2buf, a2err := encode(aliveMsg, a2)
 	if a2err != nil {
-		t.Fatal("Unexpected error: %v", a2err)
+		t.Fatalf("Unexpected error: %v", a2err)
 	}
 
 	a3buf, a3err := encode(aliveMsg, a3)
 	if a3err != nil {
-		t.Fatal("Unexpected error: %v", a3err)
+		t.Fatalf("Unexpected error: %v", a3err)
 	}
 
 	m1.handleAlive(a1buf.Bytes()[1:], addr)
@@ -858,7 +858,7 @@ func TestHandleSuspect(t *testing.T) {
 
 	s1buf, s1err := encode(suspectMsg, s1)
 	if s1err != nil {
-		t.Fatal("Unexpected error: %v", s1err)
+		t.Fatalf("Unexpected error: %v", s1err)
 	}
 
 	// Send the message, shouldn't get discarded; state should change
@@ -873,7 +873,7 @@ func TestHandleSuspect(t *testing.T) {
 
 	s2buf, s2err := encode(suspectMsg, s2)
 	if s2err != nil {
-		t.Fatal("Unexpected error: %v", s2err)
+		t.Fatalf("Unexpected error: %v", s2err)
 	}
 
 	m1.handleSuspect(s2buf.Bytes()[1:], addr)
@@ -904,18 +904,18 @@ func TestHandleAlive(t *testing.T) {
 	// Encode 2 alive messages with the same cluster name
 	a1buf, err := encode(aliveMsg, a1)
 	if err != nil {
-		t.Fatal("Unexpected error: %v", err)
+		t.Fatalf("Unexpected error: %v", err)
 	}
 
 	a2buf, err2 := encode(aliveMsg, a2)
 	if err2 != nil {
-		t.Fatal("Unexpected error: %v", err2)
+		t.Fatalf("Unexpected error: %v", err2)
 	}
 
 	// Encode a third message with a different cluster name
 	a3buf, err3 := encode(aliveMsg, a3)
 	if err3 != nil {
-		t.Fatal("Unexpected error: %v", err3)
+		t.Fatalf("Unexpected error: %v", err3)
 	}
 
 	m1.handleAlive(a1buf.Bytes()[1:], addr)
@@ -952,17 +952,17 @@ func TestHandleDead(t *testing.T) {
 
 	a1buf, a1err := encode(aliveMsg, a1)
 	if a1err != nil {
-		t.Fatal("Unexpected error: %v", a1err)
+		t.Fatalf("Unexpected error: %v", a1err)
 	}
 
 	a2buf, a2err := encode(aliveMsg, a2)
 	if a2err != nil {
-		t.Fatal("Unexpected error: %v", a2err)
+		t.Fatalf("Unexpected error: %v", a2err)
 	}
 
 	a3buf, a3err := encode(aliveMsg, a3)
 	if a3err != nil {
-		t.Fatal("Unexpected error: %v", a3err)
+		t.Fatalf("Unexpected error: %v", a3err)
 	}
 
 	m1.handleAlive(a1buf.Bytes()[1:], addr)
@@ -985,7 +985,7 @@ func TestHandleDead(t *testing.T) {
 
 	d1buf, d1err := encode(deadMsg, d1)
 	if d1err != nil {
-		t.Fatal("Unexpected error: %v", d1err)
+		t.Fatalf("Unexpected error: %v", d1err)
 	}
 
 	// Send the message, shouldn't get discarded; state should change
@@ -1000,7 +1000,7 @@ func TestHandleDead(t *testing.T) {
 
 	d2buf, d2err := encode(deadMsg, d2)
 	if d2err != nil {
-		t.Fatal("Unexpected error: %v", d2err)
+		t.Fatalf("Unexpected error: %v", d2err)
 	}
 
 	m1.handleDead(d2buf.Bytes()[1:], addr)
